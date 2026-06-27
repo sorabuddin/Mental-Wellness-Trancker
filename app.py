@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import json
 import datetime
+import os
 
 # 1. Page Config
 st.set_page_config(
@@ -151,17 +152,24 @@ target_exam = st.sidebar.selectbox("Target Exam", ["JEE", "NEET", "UPSC", "GATE"
 # API Key handling
 st.sidebar.subheader("🔑 Gemini Authentication")
 secrets_key = ""
-try:
-    if "GEMINI_API_KEY" in st.secrets:
-        secrets_key = st.secrets["GEMINI_API_KEY"]
-except Exception:
-    pass
+# 1. Check environment variables (Hugging Face Secrets)
+if "GEMINI_API_KEY" in os.environ:
+    secrets_key = os.environ["GEMINI_API_KEY"]
+else:
+    # 2. Fallback to Streamlit secrets
+    try:
+        if "GEMINI_API_KEY" in st.secrets:
+            secrets_key = st.secrets["GEMINI_API_KEY"]
+    except Exception:
+        pass
 
-api_key_placeholder = "Configured in secrets" if secrets_key else ""
-api_key_input = st.sidebar.text_input("Enter GEMINI_API_KEY", value=secrets_key, type="password", help="If not set in secrets, enter manually here.")
-
-# Decide the active API key
-api_key = api_key_input if api_key_input else secrets_key
+if secrets_key:
+    st.sidebar.success("🔑 Gemini Key loaded from backend.")
+    api_key_input = st.sidebar.text_input("Override Gemini API Key (Optional)", value="", type="password", help="Leave blank to use the backend key.")
+    api_key = api_key_input if api_key_input else secrets_key
+else:
+    api_key_input = st.sidebar.text_input("Enter GEMINI_API_KEY", value="", type="password", help="API key not found in backend. Please enter it here.")
+    api_key = api_key_input
 
 # Mock historical mood data based on Target Exam to make it custom
 today = datetime.date.today()
@@ -469,3 +477,4 @@ with tab2:
         <p style="color: #E2E8F0; font-size: 0.85em; margin-top: 10px;">Please remember: seeking professional help is a sign of strength. You do not have to carry this alone.</p>
     </div>
     """, unsafe_allow_html=True)
+
